@@ -649,6 +649,8 @@ class BigQueryBaseCursor(LoggingMixin):
                   time_partitioning=None,
                   api_resource_configs=None,
                   cluster_fields=None,
+                  destination_table_description=None,
+                  destination_table_friendly_name=None,
                   location=None):
         """
         Executes a BigQuery SQL query. Optionally persists results in a BigQuery
@@ -721,6 +723,16 @@ class BigQueryBaseCursor(LoggingMixin):
             US and EU. See details at
             https://cloud.google.com/bigquery/docs/locations#specifying_your_location
         :type location: str
+        :param destination_table_description The description for the destination table.
+            This will only be used if the destination table is newly created. If
+            the table already exists and a value different than the current description
+            is provided, the job will fail.
+        :type destination_table_description: str
+        :param destination_table_friendly_name The friendly name for the destination
+            table. This will only be used if the destination table is newly created.
+            If the table already exists and a value different than the current friendly
+            name is provided, the job will fail.
+        :type destination_table_friendly_name: str
         """
 
         if time_partitioning is None:
@@ -780,6 +792,14 @@ class BigQueryBaseCursor(LoggingMixin):
                 'tableId': destination_table,
             }
 
+        destination_table_properties = None
+        if destination_table_description or destination_table_friendly_name:
+            destination_table_properties = {}
+            if destination_table_description:
+                destination_table_properties['description'] = destination_table_description
+            if destination_table_friendly_name:
+                destination_table_properties['friendlyName'] = destination_table_friendly_name
+
         if cluster_fields:
             cluster_fields = {'fields': cluster_fields}
 
@@ -794,6 +814,7 @@ class BigQueryBaseCursor(LoggingMixin):
             (time_partitioning, 'timePartitioning', {}, dict),
             (schema_update_options, 'schemaUpdateOptions', None, tuple),
             (destination_dataset_table, 'destinationTable', None, dict),
+            (destination_table_properties, 'destinationTableProperties', None, dict),
             (cluster_fields, 'clustering', None, dict),
         ]
 
@@ -823,6 +844,11 @@ class BigQueryBaseCursor(LoggingMixin):
                 if param_name == 'schemaUpdateOptions' and param:
                     self.log.info("Adding experimental 'schemaUpdateOptions': "
                                   "%s", schema_update_options)
+
+                if param_name == 'destinationTableProperties' and param:
+                    self.log.info("Adding beta 'destinationTableProperties'. "
+                                  "If values are different than currently "
+                                  "provided, the job will fail.")
 
                 if param_name == 'destinationTable':
                     for key in ['projectId', 'datasetId', 'tableId']:
@@ -1011,6 +1037,8 @@ class BigQueryBaseCursor(LoggingMixin):
                  src_fmt_configs=None,
                  time_partitioning=None,
                  cluster_fields=None,
+                 destination_table_description=None,
+                 destination_table_friendly_name=None,
                  autodetect=False):
         """
         Executes a BigQuery load command to load data from Google Cloud Storage
@@ -1081,6 +1109,16 @@ class BigQueryBaseCursor(LoggingMixin):
             by one or more columns. This is only available in combination with
             time_partitioning. The order of columns given determines the sort order.
         :type cluster_fields: list[str]
+        :param destination_table_description The description for the destination table.
+            This will only be used if the destination table is newly created. If
+            the table already exists and a value different than the current description
+            is provided, the job will fail.
+        :type destination_table_description: str
+        :param destination_table_friendly_name The friendly name for the destination
+            table. This will only be used if the destination table is newly created.
+            If the table already exists and a value different than the current friendly
+            name is provided, the job will fail.
+        :type destination_table_friendly_name: str
         """
 
         # bigquery only allows certain source formats
@@ -1171,6 +1209,14 @@ class BigQueryBaseCursor(LoggingMixin):
 
         if max_bad_records:
             configuration['load']['maxBadRecords'] = max_bad_records
+
+        if destination_table_description or destination_table_friendly_name:
+            destination_table_properties = {}
+            if destination_table_description:
+                destination_table_properties['description'] = destination_table_description
+            if destination_table_friendly_name:
+                destination_table_properties['friendlyName'] = destination_table_friendly_name
+            configuration['load']['destinationTableProperties'] = destination_table_properties
 
         # if following fields are not specified in src_fmt_configs,
         # honor the top-level params for backward-compatibility

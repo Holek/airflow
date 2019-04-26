@@ -124,6 +124,15 @@ class GoogleCloudStorageToBigQueryOperator(BaseOperator):
         time_partitioning. The order of columns given determines the sort order.
         Not applicable for external tables.
     :type cluster_fields: list[str]
+    :param destination_table_description The description for the destination table.
+        This will only be used if the destination table is newly created. If
+        the table already exists and a value different than the current description
+        is provided, the job will fail.
+    :type destination_table_description: str
+    :param destination_table_friendly_name The friendly name for the destination
+        table. This will only be used if the destination table is newly created.
+        If the table already exists and a value different than the current friendly
+        name is provided, the job will fail.
     :param autodetect: [Optional] Indicates if we should automatically infer the
         options and schema for CSV and JSON sources. (Default: ``False``)
     :type autodetect: bool
@@ -160,6 +169,8 @@ class GoogleCloudStorageToBigQueryOperator(BaseOperator):
                  external_table=False,
                  time_partitioning=None,
                  cluster_fields=None,
+                 destination_table_description=None,
+                 destination_table_friendly_name=None,
                  autodetect=False,
                  *args, **kwargs):
 
@@ -176,6 +187,8 @@ class GoogleCloudStorageToBigQueryOperator(BaseOperator):
 
         # BQ config
         self.destination_project_dataset_table = destination_project_dataset_table
+        self.destination_table_description = destination_table_description
+        self.destination_table_friendly_name = destination_table_friendly_name
         self.schema_fields = schema_fields
         self.source_format = source_format
         self.compression = compression
@@ -246,6 +259,8 @@ class GoogleCloudStorageToBigQueryOperator(BaseOperator):
         else:
             cursor.run_load(
                 destination_project_dataset_table=self.destination_project_dataset_table,
+                destination_table_description=self.destination_table_description,
+                destination_table_friendly_name=self.destination_table_friendly_name,
                 schema_fields=schema_fields,
                 source_uris=source_uris,
                 source_format=self.source_format,

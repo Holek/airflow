@@ -101,6 +101,16 @@ class BigQueryOperator(BaseOperator):
         by one or more columns. This is only available in conjunction with
         time_partitioning. The order of columns given determines the sort order.
     :type cluster_fields: list[str]
+    :param destination_table_description The description for the destination table.
+        This will only be used if the destination table is newly created. If
+        the table already exists and a value different than the current description
+        is provided, the job will fail.
+    :type destination_table_description: str
+    :param destination_table_friendly_name The friendly name for the destination
+        table. This will only be used if the destination table is newly created.
+        If the table already exists and a value different than the current friendly
+        name is provided, the job will fail.
+    :type destination_table_friendly_name: str
     :param location: The geographic location of the job. Required except for
         US and EU. See details at
         https://cloud.google.com/bigquery/docs/locations#specifying_your_location
@@ -132,12 +142,16 @@ class BigQueryOperator(BaseOperator):
                  time_partitioning=None,
                  api_resource_configs=None,
                  cluster_fields=None,
+                 destination_table_description=None,
+                 destination_table_friendly_name=None,
                  location=None,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.sql = sql
         self.destination_dataset_table = destination_dataset_table
+        self.destination_table_description = destination_table_description
+        self.destination_table_friendly_name = destination_table_friendly_name
         self.write_disposition = write_disposition
         self.create_disposition = create_disposition
         self.allow_large_results = allow_large_results
@@ -172,6 +186,8 @@ class BigQueryOperator(BaseOperator):
         self.bq_cursor.run_query(
             sql=self.sql,
             destination_dataset_table=self.destination_dataset_table,
+            destination_table_description=self.destination_table_description,
+            destination_table_friendly_name=self.destination_table_friendly_name,
             write_disposition=self.write_disposition,
             allow_large_results=self.allow_large_results,
             flatten_results=self.flatten_results,
